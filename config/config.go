@@ -36,8 +36,9 @@ type Config struct {
 	proxyHosts          types.ProxyHosts
 	oldHosts            []string
 	availableProxyHosts types.ProxyHosts
-
-	m sync.RWMutex
+	Username            string
+	Password            string
+	m                   sync.RWMutex
 }
 
 // Validate the config

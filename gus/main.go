@@ -96,6 +96,18 @@ func main() {
 				Usage:       "proxies update interval(second)",
 				Destination: &conf.ProxyUpdateInterval,
 			},
+			&cli.StringFlag{
+				Name:        "username",
+				Value:       "proxy",
+				Usage:       "proxy credential username",
+				Destination: &conf.Username,
+			},
+			&cli.StringFlag{
+				Name:        "password",
+				Value:       "proxy",
+				Usage:       "proxy credential password",
+				Destination: &conf.Password,
+			},
 		},
 		CustomAppHelpTemplate: helpTemplate,
 		Action: func(c *cli.Context) error {

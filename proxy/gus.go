@@ -1,10 +1,12 @@
 package proxy
 
 import (
+	"encoding/base64"
 	"math/rand"
 	"net"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,6 +21,10 @@ import (
 
 type GusProxy http.Handler
 
+const (
+	ProxyAuthHeader = "Proxy-Authorization"
+)
+
 // Gustavo main structure
 type Gustavo struct {
 	proxyHosts  func() []*types.ProxyHost
@@ -30,6 +36,31 @@ type Gustavo struct {
 	dnsDB     *db.DNS
 	next      int
 	m         sync.Mutex
+	username  string
+	password  string
+}
+
+// Basic auth
+func GetBasicAuth(req *http.Request) (username, password string, ok bool) {
+	auth := req.Header.Get(ProxyAuthHeader)
+	if auth == "" {
+		return "", "", false
+	}
+
+	const prefix = "Basic "
+	if !strings.HasPrefix(auth, prefix) {
+		return "", "", false
+	}
+	c, err := base64.StdEncoding.DecodeString(auth[len(prefix):])
+	if err != nil {
+		return "", "", false
+	}
+	cs := string(c)
+	s := strings.IndexByte(cs, ':')
+	if s < 0 {
+		return "", "", false
+	}
+	return cs[:s], cs[s+1:], true
 }
 
 func (gs *Gustavo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -37,6 +68,17 @@ func (gs *Gustavo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	// keep alive all requests
 	r.Header.Set("Connection", "keep-alive")
+	username, password, decodeSucc := GetBasicAuth(r)
+
+	if !decodeSucc {
+		w.WriteHeader(http.StatusProxyAuthRequired)
+		return
+	}
+
+	if username != gs.username && password != gs.password {
+		w.WriteHeader(http.StatusProxyAuthRequired)
+		return
+	}
 
 	// rebuild request
 	hostIP := ""
@@ -159,5 +201,7 @@ func New(conf *config.Config, DNSdb *db.DNS) GusProxy {
 		dnsDB:       DNSdb,
 		randomUA:    conf.RandomUA,
 		directProxy: goproxy.NewProxyHttpServer(),
+		username:    conf.Username,
+		password:    conf.Password,
 	}
 }
