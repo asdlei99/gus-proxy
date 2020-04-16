@@ -1,5 +1,11 @@
 # Gus-Proxy
 
+## 在原版基础上增加了 proxy authentication
+
+```
+./bin/gus-proxy -f data/proxies.txt --db-path ./data/gus.db --username username --password password
+```
+
 "gus - 绝命毒师里的大毒枭"
 
 [![Build Status](https://travis-ci.org/wrfly/gus-proxy.svg?branch=master)](https://travis-ci.org/wrfly/gus-proxy)
